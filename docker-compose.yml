@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: password
+    ports: ["5672:5672","15672:15672"]
+    networks:
+      - shared_network
+
+  mongo:
+    image: mongo:6
+    ports: ["27017:27017"]
+    networks:
+      - shared_network
+
+  gtu-log-service:
+    build: .
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=admin
+      - SPRING_RABBITMQ_PASSWORD=password
+      - SPRING_DATA_MONGODB_HOST=mongo
+      - SERVER_PORT=0
+    depends_on:
+      - rabbitmq
+      - mongo
+    networks:
+      - shared_network
+
+networks:
+  shared_network:
+    external: true

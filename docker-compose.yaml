@@ -9,12 +9,6 @@ services:
     networks:
       - shared_network
 
-  mongo:
-    image: mongo:6
-    ports: ["27017:27017"]
-    networks:
-      - shared_network
-
   gtu-log-service:
     build: .
     environment:
@@ -22,11 +16,10 @@ services:
       - SPRING_RABBITMQ_PORT=5672
       - SPRING_RABBITMQ_USERNAME=admin
       - SPRING_RABBITMQ_PASSWORD=password
-      - SPRING_DATA_MONGODB_HOST=mongo
-      - SERVER_PORT=0
+      - SPRING_DATA_MONGODB_URI=mongodb+srv://GTU-Admin:GTU-Password@gtu-logs.pntikkj.mongodb.net/GTULogsDB?retryWrites=true&w=majority&appName=GTU-Logs
+      - SERVER_PORT=8085
     depends_on:
       - rabbitmq
-      - mongo
     networks:
       - shared_network
 

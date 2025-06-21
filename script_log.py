@@ -14,7 +14,7 @@ log_message = {
     "timestamp": datetime.now(timezone.utc).isoformat(),
     "service": "servicio-ejemplo",
     "level": "INFO",
-    "message": "Este es un mensaje de prueba",
+    "message": "Este es un mensaje de prueba 3",
     "details": {
         "usuario": "admin",
         "accion": "login"

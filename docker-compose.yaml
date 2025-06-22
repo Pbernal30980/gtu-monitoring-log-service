@@ -13,12 +13,12 @@ services:
   gtu-log-service:
     build: .
     environment:
-      - SPRING_RABBITMQ_HOST=rabbitmq
-      - SPRING_RABBITMQ_PORT=5672
-      - SPRING_RABBITMQ_USERNAME=admin
-      - SPRING_RABBITMQ_PASSWORD=password
-      - SPRING_DATA_MONGODB_URI=mongodb+srv://GTU-Admin:GTU-Password@gtu-logs.pntikkj.mongodb.net/GTULogsDB?retryWrites=true&w=majority&appName=GTU-Logs
-      - SERVER_PORT=8085
+      - SPRING_RABBITMQ_HOST
+      - SPRING_RABBITMQ_PORT
+      - SPRING_RABBITMQ_USERNAME
+      - SPRING_RABBITMQ_PASSWORD
+      - SPRING_DATA_MONGODB_URI
+      - SERVER_PORT
     networks:
       - shared_network
 

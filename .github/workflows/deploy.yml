@@ -1,4 +1,4 @@
-name: Deploy GTU Log Service
+name: Deploy Log Service
 
 env:
   
@@ -6,41 +6,86 @@ env:
 on:
   push:
     branches:
-      - main
-  workflow_dispatch:
+      - develop
+  pull_request:
+    branches:
+      - develop
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-    dev:
-      SPRING_RABBITMQ_HOST: ${{ secrets.SPRING_RABBITMQ_HOST }}
-      SPRING_RABBITMQ_PORT: ${{ secrets.SPRING_RABBITMQ_PORT }}
-      SPRING_RABBITMQ_USERNAME: ${{ secrets.SPRING_RABBITMQ_USERNAME }}
-      SPRING_RABBITMQ_PASSWORD: ${{ secrets.SPRING_RABBITMQ_PASSWORD }}
-      SPRING_DATA_MONGODB_URI: ${{ secrets.SPRING_DATA_MONGODB_URI }}
-      SERVER_PORT: ${{ secrets.SERVER_PORT }}
-      VPS_USER: ${{ secrets.VPS_USER }}
-      VPS_HOST: ${{ secrets.VPS_HOST }}
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     steps:
-      - name: Checkout código
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Configurar Java
-        uses: actions/setup-java@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'
           java-version: '17'
+          distribution: 'temurin'
 
-      - name: Construir proyecto
-        run: ./mvnw clean package -DskipTests
-
-      - name: Notificar a Slack
-        if: always()
-        uses: 8398a7/action-slack@v3
+      - name: Cache Maven packages
+        uses: actions/cache@v3
         with:
-          status: ${{ job.status }}
-          fields: repo,commit,author
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          path: |
+            ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
 
+      - name: Run tests
+        run: mvn test
+
+  deploy:
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure SSH access
+        run: |
+          set -e
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Verify SSH connection
+        run: ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "echo SSH connection successful"
+
+      - name: Ensure deploy directory exists
+        run: ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "mkdir -p ~/deploy/${{ github.event.repository.name }}"
+
+      - name: Copy project files to VPS
+        run: |
+          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:~/deploy/${{ github.event.repository.name }}/
+
+      - name: Deploy services with Docker Compose
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            cd ~/deploy/${{ github.event.repository.name }}
+            echo "SPRING_RABBITMQ_HOST=${{ secrets.SPRING_RABBITMQ_HOST }}" > .env
+            echo "SPRING_RABBITMQ_PORT=${{ secrets.SPRING_RABBITMQ_PORT }}" >> .env
+            echo "SPRING_RABBITMQ_USERNAME=${{ secrets.SPRING_RABBITMQ_USERNAME }}" >> .env
+            echo "SPRING_RABBITMQ_PASSWORD=${{ secrets.SPRING_RABBITMQ_PASSWORD }}" >> .env
+            echo "SPRING_DATA_MONGODB_URI=${{ secrets.SPRING_DATA_MONGODB_URI }}" >> .env
+            echo "SERVER_PORT=${{ secrets.SERVER_PORT }}" >> .env
+            docker compose down --remove-orphans
+            docker compose build
+            docker compose up -d --remove-orphans
+            docker system prune -f
+          EOF
+      - name: Notify Slack on Success
+        if: success()
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{"text":"✅ *Deployment successful!* 🚀\nRepository: `${{ github.repository }}`\nBranch: `${{ github.ref }}`\nCommit: `${{ github.sha }}`\nAuthor: `${{ github.actor }}`"}' \
+          ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Slack on Failure
+        if: failure()
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{"text":"❌ *Deployment failed!* 🔥\nRepository: `${{ github.repository }}`\nBranch: `${{ github.ref }}`\nCommit: `${{ github.sha }}`\nAuthor: `${{ github.actor }}`"}' \
+          ${{ secrets.SLACK_WEBHOOK_URL }}

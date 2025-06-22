@@ -1,13 +1,14 @@
 version: '3.8'
 services:
-  rabbitmq:
-    image: rabbitmq:3-management
-    environment:
-      RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: password
-    ports: ["5672:5672","15672:15672"]
-    networks:
-      - shared_network
+  
+  #rabbitmq:
+  #  image: rabbitmq:3-management
+  #  environment:
+  #    RABBITMQ_DEFAULT_USER: admin
+  #    RABBITMQ_DEFAULT_PASS: password
+  #  ports: ["5672:5672","15672:15672"]
+  #  networks:
+  #    - shared_network
 
   gtu-log-service:
     build: .
@@ -18,10 +19,9 @@ services:
       - SPRING_RABBITMQ_PASSWORD=password
       - SPRING_DATA_MONGODB_URI=mongodb+srv://GTU-Admin:GTU-Password@gtu-logs.pntikkj.mongodb.net/GTULogsDB?retryWrites=true&w=majority&appName=GTU-Logs
       - SERVER_PORT=8085
-    depends_on:
-      - rabbitmq
     networks:
       - shared_network
 
 networks:
   shared_network:
+    external: true

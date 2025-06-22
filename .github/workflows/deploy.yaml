@@ -40,11 +40,9 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
             cd ~/deploy/${{ github.event.repository.name }}
             echo "SPRING_RABBITMQ_HOST=${{ secrets.SPRING_RABBITMQ_HOST }}" > .env
-            echo "SPRING_RABBITMQ_PORT=${{ secrets.SPRING_RABBITMQ_PORT }}" >> .env
             echo "SPRING_RABBITMQ_USERNAME=${{ secrets.SPRING_RABBITMQ_USERNAME }}" >> .env
             echo "SPRING_RABBITMQ_PASSWORD=${{ secrets.SPRING_RABBITMQ_PASSWORD }}" >> .env
             echo "SPRING_DATA_MONGODB_URI=${{ secrets.SPRING_DATA_MONGODB_URI }}" >> .env
-            echo "SERVER_PORT=${{ secrets.SERVER_PORT }}" >> .env
             docker compose down --remove-orphans
             docker compose build
             docker compose up -d --remove-orphans

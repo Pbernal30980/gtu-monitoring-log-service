@@ -14,12 +14,20 @@ public class LogServiceImpl implements LogService {
 
     @Override
     public void processLog(LogEvent event) {
-        // Almacena en colección "logs"
-        mongoTemplate.save(event, "logs");
-        // Si es ERROR o CRITICAL, lanza alerta (Slack, email…)
+        
+        String collectionName = determineCollection(event);
+
+        
+        mongoTemplate.save(event, collectionName);
+
+        // Señal de alerta
         if ("ERROR".equalsIgnoreCase(event.getLevel()) 
             || "CRITICAL".equalsIgnoreCase(event.getLevel())) {
-            // TODO: integración con webhook de Slack o similar
+            mongoTemplate.save(event, "critical-Logs");
         }
+    }
+
+    private String determineCollection(LogEvent event) {
+        return event.getService() != null ? event.getService() : "default-logs";
     }
 }

@@ -9,6 +9,8 @@ class GtuMonitoringLogServiceApplicationTests {
 
 	@Test
 	void contextLoads() {
+		// this test is used to check if the Spring application context loads
+		// successfully
+		// it does not contain any assertions or logic, as its purpose is to ensure that
 	}
-
 }

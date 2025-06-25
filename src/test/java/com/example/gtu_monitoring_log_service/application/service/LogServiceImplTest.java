@@ -36,7 +36,10 @@ class LogServiceImplTest {
     void testProcessLog_SendAlertForCriticalLog() {
         LogEvent logEvent = new LogEvent();
         logEvent.setLevel("CRITICAL");
+
         logService.processLog(logEvent);
 
+        // Verificación de la interacción con el mock
+        verify(mongoTemplate, times(1)).save(logEvent, "critical-Logs");
     }
 }

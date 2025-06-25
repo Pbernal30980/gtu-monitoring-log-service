@@ -20,7 +20,6 @@ public class LogMessageConsumer {
 
     @RabbitListener(queues = "${rabbitmq.queue.log}")
     public void receiveMessage(String msg) {
-        System.out.println("[DEBUG] Mensaje recibido de RabbitMQ: " + msg);
         try {
             LogEventMessage evt = objectMapper.readValue(msg, LogEventMessage.class);
             LogEvent log = new LogEvent();
@@ -29,12 +28,9 @@ public class LogMessageConsumer {
             log.setLevel(evt.getLevel());
             log.setMessage(evt.getMessage());
             log.setDetails(evt.getDetails());
-            System.out.println("[DEBUG] LogEvent a guardar: " + log);
             logService.processLog(log);
-            System.out.println("[DEBUG] Log guardado exitosamente en MongoDB");
         } catch (Exception e) {
-            System.err.println("[ERROR] Fallo al procesar el mensaje de log: " + e.getMessage());
-            e.printStackTrace();
+            // Handle the exception (e.g., log it)
         }
     }
 }
